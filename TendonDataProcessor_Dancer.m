@@ -1,10 +1,8 @@
 function result = TendonDataProcessor_Dancer(varargin)
-% TENDONDATAPROCESSOR_V2 : Reads data from tensiometer data file, filters,
+% TDP_Dancer : Reads data from tensiometer data file from a dancer, filters,
 % interpolates, calculates wavespeed at each point, plots wavespeed
 % vs time
-% - simplifies variables and removes duplicates
-% - removes unused commented sections
-% This version is just a streamlined version of the first
+
 close all
 %disp(1)
 %% Set up for varargin
@@ -39,19 +37,6 @@ addParameter(p,"InterpMethod",defaultInterpMethod,validInterpMethod);
 addParameter(p,"Spacing",defaultSpacing,validSpacing);
 
 parse(p,varargin{:});                                                      % Parse the user input
-
-%% preliminary data
-%data = importdata(p.Results.FileName);    % read in the data from file
-
-% y1 = data.AI0;      % pull out the two accelerometer data vectors
-% y2 = data.AI1;
-% 
-% .01 = p.Results.Spacing/1000;    % calculate the distance between Accelerometers in METERS
-% seconds = length(y1)/data.SampFreq;             % calculate the time length of the sample window
-% t = transpose(linspace(0, seconds, length(y1))); % make a vector of evenly spaced time points to match data points
-% tps = p.Results.TPS;  %taps per second - PARAMETER
-% clear("average_speed");
-% clear("x");
 
 %% accelerometer data
 data = importdata(p.Results.FileName);                                  % read in the accelerometer data from file
