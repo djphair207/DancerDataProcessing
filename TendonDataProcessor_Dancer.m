@@ -38,7 +38,7 @@ addParameter(p,"Spacing",defaultSpacing,validSpacing);
 
 parse(p,varargin{:});                                                      % Parse the user input
 
-% THIS IS A COMMENT TO SEE IF THE COMMIT IS WORKING
+% Testing Commit number 2
 %% accelerometer data
 data = importdata(p.Results.FileName);                                  % read in the accelerometer data from file
 t = transpose(0:data.x_values.increment:data.x_values.increment*(data.x_values.number_of_values-1));% this only works for the data collect from the SIEMENS system
