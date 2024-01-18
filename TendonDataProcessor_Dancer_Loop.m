@@ -66,7 +66,7 @@ TimeToIndexConversion = length(interp_t)/max(t);                        % this i
 % filtered_original_A0 = filtfilt(b, a, A0);
 % filtered_original_A1 = filtfilt(b, a, A1);
 
-BPfilt = designfilt('bandpassiir','FilterOrder',2,'HalfPowerFrequency1',500,'HalfPowerFrequency2',3000,'SampleRate',SampFreq);
+BPfilt = designfilt('bandpassiir','FilterOrder',4,'HalfPowerFrequency1',200,'HalfPowerFrequency2',3000,'SampleRate',SampFreq);
 %freqz(d.Coefficients,[],25000)
 
 filtered_original_A0 = filtfilt(BPfilt,A0);

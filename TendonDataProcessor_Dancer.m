@@ -50,7 +50,7 @@ TimeToIndexConversion = length(interp_t)/max(t);                        % this i
 
 %% Filtering
 
-BPfilt = designfilt('bandpassiir','FilterOrder',2,'HalfPowerFrequency1',500,'HalfPowerFrequency2',3000,'SampleRate',SampFreq);     % create a bandpass filter
+BPfilt = designfilt('bandpassiir','FilterOrder',4,'HalfPowerFrequency1',10,'HalfPowerFrequency2',2000,'SampleRate',SampFreq);     % create a bandpass filter
 filtered_original_A0 = filtfilt(BPfilt,A0);     % filter both arrays of accelerometer data 
 filtered_original_A1 = filtfilt(BPfilt,A1);
 
@@ -119,8 +119,8 @@ end
 %% calculating the speed of the signal at each tap
 
 MaxLags = fix(.01*TimeToIndexConversion/p.Results.MinSpeed); % MinSpeed -> PARAMETER
-Lower_bound = 0*p.Results.InterpAmount;
-Upper_bound = 100*p.Results.InterpAmount;
+Lower_bound = 20*p.Results.InterpAmount;
+Upper_bound = 80*p.Results.InterpAmount;
 filtered_interp1_speed = zeros(1,numTaps);
 time = zeros(1,numTaps);
 filtered_difference = zeros(1,numTaps);
@@ -179,7 +179,7 @@ ylabel('speed (m/s)');
 hold off
 
 %% plotting cross corrolation
-PlotXCorr = 2;   % to activate/deactivate plotting the xcorr, 0 = OFF, 1 = single plot, 2 = every tap
+PlotXCorr = 0;   % to activate/deactivate plotting the xcorr, 0 = OFF, 1 = single plot, 2 = every tap
 if PlotXCorr == 1
     i=125;    % must be less than the number of taps in the data set
     windowed_time = interp_t(x(i) - Lower_bound:x(i) + Upper_bound);
@@ -205,7 +205,7 @@ if PlotXCorr == 2
     title('Accelerometer Response with Shifts');
     xlabel('Time (s)');
     ylabel('Acceleration (m/s^2)');
-    for i = 1:numTaps
+    for i = 1:5:numTaps
         color = [33/255, 176/255, 38/255];
         figure(3)
         if x(i) - Lower_bound < 0
