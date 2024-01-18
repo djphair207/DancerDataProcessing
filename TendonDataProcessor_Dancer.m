@@ -49,8 +49,9 @@ interp_t = linspace(t(1), t(end), size(t,1)*p.Results.InterpAmount);    % make a
 TimeToIndexConversion = length(interp_t)/max(t);                        % this is the value that converts from 'time space' to 'index space' & vice versa
 
 %% Filtering
+%BPfilt = designfilt('bandpassiir','FilterOrder',4,'HalfPowerFrequency1',10,'HalfPowerFrequency2',2000,'SampleRate',SampFreq);     % create a bandpass filter
 
-BPfilt = designfilt('bandpassiir','FilterOrder',4,'HalfPowerFrequency1',10,'HalfPowerFrequency2',2000,'SampleRate',SampFreq);     % create a bandpass filter
+BPfilt = designfilt('bandpassiir','FilterOrder',4,'HalfPowerFrequency1',200,'HalfPowerFrequency2',1500,'SampleRate',SampFreq);     % create a bandpass filter
 filtered_original_A0 = filtfilt(BPfilt,A0);     % filter both arrays of accelerometer data 
 filtered_original_A1 = filtfilt(BPfilt,A1);
 
@@ -147,6 +148,8 @@ for i = 1:length(x)%taps      % walk through all the taps, windowing each of the
     end
     time(i) = x(i)/TimeToIndexConversion;
 end
+
+size(filtered_difference)
 
 %% removing outliers from wavespeed
 wavespeed_NoOutliers = zeros(1,length(filtered_interp1_speed));              % create a new vector for the wavespeed squared w/o outliers
