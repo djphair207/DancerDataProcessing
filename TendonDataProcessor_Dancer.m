@@ -50,7 +50,7 @@ TimeToIndexConversion = length(interp_t)/max(t);                        % this i
 
 %% Filtering
 
-BPfilt = designfilt('bandpassiir','FilterOrder',4,'HalfPowerFrequency1',500,'HalfPowerFrequency2',3000,'SampleRate',25000);     % create a bandpass filter
+BPfilt = designfilt('bandpassiir','FilterOrder',2,'HalfPowerFrequency1',500,'HalfPowerFrequency2',3000,'SampleRate',SampFreq);     % create a bandpass filter
 filtered_original_A0 = filtfilt(BPfilt,A0);     % filter both arrays of accelerometer data 
 filtered_original_A1 = filtfilt(BPfilt,A1);
 

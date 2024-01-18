@@ -66,7 +66,7 @@ TimeToIndexConversion = length(interp_t)/max(t);                        % this i
 % filtered_original_A0 = filtfilt(b, a, A0);
 % filtered_original_A1 = filtfilt(b, a, A1);
 
-BPfilt = designfilt('bandpassiir','FilterOrder',4,'HalfPowerFrequency1',500,'HalfPowerFrequency2',3000,'SampleRate',25000);
+BPfilt = designfilt('bandpassiir','FilterOrder',2,'HalfPowerFrequency1',500,'HalfPowerFrequency2',3000,'SampleRate',SampFreq);
 %freqz(d.Coefficients,[],25000)
 
 filtered_original_A0 = filtfilt(BPfilt,A0);
@@ -78,6 +78,7 @@ filtered_A0 = interp1(t,filtered_original_A0,interp_t);
 filtered_A1 = interp1(t,filtered_original_A1,interp_t);
 
 %% plotting all accelerometer data
+
 figure;
 hold on
 plot(interp_t,filtered_A0,"r")
@@ -88,16 +89,15 @@ xlabel('Time (s)');
 ylabel('Acceleration (m/s^2)');
 hold off
 
-figure;
-hold on
-plot(t,A0,"r")
-plot(t,A1,"b")
-legend("Upper Accelerometer", "Lower Accelerometer");
-title('Raw Accelerometer Response');
-xlabel('Time (s)');
-ylabel('Acceleration (m/s^2)');
-hold off
-
+% figure;
+% hold on
+% plot(t,A0,"r")
+% plot(t,A1,"b")
+% legend("Upper Accelerometer", "Lower Accelerometer");
+% title('Raw Accelerometer Response');
+% xlabel('Time (s)');
+% ylabel('Acceleration (m/s^2)');
+% hold off
 
 %% Calculating where each tap from the tapper will occur
 
@@ -167,85 +167,77 @@ end
 % / / / / / / / / / / / / / %
 
 %% calculating the speed of the signal at each tap
-for q = -5:0
-    MaxLags = fix(.01*TimeToIndexConversion/p.Results.MinSpeed); % MinSpeed -> PARAMETER
-    Lower_bound = q*10*p.Results.InterpAmount;
-    Upper_bound = 100*p.Results.InterpAmount;
-    filtered_interp1_speed = zeros(1,numTaps);
-    time = zeros(1,numTaps);
-    filtered_difference = zeros(1,numTaps);
-    for i = 1:length(x)%taps      % walk through all the taps, windowing each of them
-        if x(i)-Lower_bound < 0     % if the window extends to neg time, use 0 instead
-            windowed_time = interp_t(1:x(i) + Upper_bound);
-            new_filtered_A0 = filtered_A0(1:x(i) + Upper_bound);
-            new_filtered_A1 = filtered_A1(1:x(i) + Upper_bound);
-        elseif x(i) + Upper_bound > x(end)  % if the window extend outside the big end of x, use the last x val instead
-            windowed_time = interp_t(x(i) - Lower_bound:x(end));
-            new_filtered_A0 = filtered_A0(x(i) - Lower_bound:x(end));
-            new_filtered_A1 = filtered_A1(x(i) - Lower_bound:x(end));
-        else
-            windowed_time = interp_t(x(i) - Lower_bound:x(i) + Upper_bound);
-            new_filtered_A0 = filtered_A0(x(i) - Lower_bound:x(i) + Upper_bound);
-            new_filtered_A1 = filtered_A1(x(i) - Lower_bound:x(i) + Upper_bound);
-        end
-       
+figure
+n = 1;
+for q = -2:2
+    for m = 0:4
+        MaxLags = fix(.01*TimeToIndexConversion/p.Results.MinSpeed); % MinSpeed -> PARAMETER
+        Lower_bound = q*10*p.Results.InterpAmount;
+        Upper_bound = (60+(m*10))*p.Results.InterpAmount;
+        filtered_interp1_speed = zeros(1,numTaps);
+        time = zeros(1,numTaps);
+        filtered_difference = zeros(1,numTaps);
+        for i = 1:length(x)%taps      % walk through all the taps, windowing each of them
+            if x(i)-Lower_bound < 0     % if the window extends to neg time, use 0 instead
+                windowed_time = interp_t(1:x(i) + Upper_bound);
+                new_filtered_A0 = filtered_A0(1:x(i) + Upper_bound);
+                new_filtered_A1 = filtered_A1(1:x(i) + Upper_bound);
+            elseif x(i) + Upper_bound > x(end)  % if the window extend outside the big end of x, use the last x val instead
+                windowed_time = interp_t(x(i) - Lower_bound:x(end));
+                new_filtered_A0 = filtered_A0(x(i) - Lower_bound:x(end));
+                new_filtered_A1 = filtered_A1(x(i) - Lower_bound:x(end));
+            else
+                windowed_time = interp_t(x(i) - Lower_bound:x(i) + Upper_bound);
+                new_filtered_A0 = filtered_A0(x(i) - Lower_bound:x(i) + Upper_bound);
+                new_filtered_A1 = filtered_A1(x(i) - Lower_bound:x(i) + Upper_bound);
+            end
+           
+            
+            [filtered_r,filtered_lags] = xcorr(new_filtered_A0,new_filtered_A1,MaxLags);
+            index_filtered_interp1 = find(filtered_r == max(filtered_r(fix(length(filtered_r)/2:end))),1);      % only looking at correlations that result in (+) wave speeds (1/9/24)
+            filtered_difference(i) = filtered_lags(index_filtered_interp1);
+            filtered_interp1_speed(i) = ((.01)/(filtered_difference(i)/TimeToIndexConversion));                 % 'abs' was removed (1/9/24)
+            if filtered_interp1_speed(i) == inf
+                filtered_interp1_speed(i) = p.Results.MinSpeed;
+            end
         
-        [filtered_r,filtered_lags] = xcorr(new_filtered_A0,new_filtered_A1,MaxLags);
-        index_filtered_interp1 = find(filtered_r == max(filtered_r(fix(length(filtered_r)/2:end))),1);      % only looking at correlations that result in (+) wave speeds (1/9/24)
-        filtered_difference(i) = filtered_lags(index_filtered_interp1);
-        filtered_interp1_speed(i) = ((.01)/(filtered_difference(i)/TimeToIndexConversion));                 % 'abs' was removed (1/9/24)
-        if filtered_interp1_speed(i) == inf
-            filtered_interp1_speed(i) = p.Results.MinSpeed;
-    %         %color = [33/255, 176/255, 38/255];
-    %         plot(windowed_time,new_filtered_A0,"r",'LineWidth', 2)
-    %         hold on
-    %         plot(windowed_time,new_filtered_A1,"b", 'LineWidth', 2)
-    %         %plot(windowed_time+filtered_difference(i)/TimeToIndexConversion,filtered_A1(1:x(i) + Upper_bound),'color', color, 'LineWidth', 2)
-    %         firstPeak = drawcrosshair;
-    %         secondPeak = drawcrosshair;
-    %         peak_t_A0 = firstPeak.Position(1);
-    %         peak_t_A1 = secondPeak.Position(1);
-    %         filtered_difference(i) = peak_t_A0 - peak_t_A1;
-    %         filtered_interp1_speed(i) = abs((.01)/(filtered_difference(i)/TimeToIndexConversion));
-    %         hold off
+            time(i) = x(i)/TimeToIndexConversion;
         end
-    
-        time(i) = x(i)/TimeToIndexConversion;
-    end
-    
-    %disp(filtered_interp1_speed)
-    %% removing outliers from wavespeed
-    wavespeed_NoOutliers = zeros(1,length(filtered_interp1_speed));              % create a new vector for the wavespeed squared w/o outliers
-    time_NoOutliers = zeros(1,length(time));                                        % create a new vector for time to match the wavespeed w/o outliers
-    for i = 1:length(filtered_interp1_speed)                                             % walk through the WS^2 vectors
-        if filtered_interp1_speed(i) > 200 || filtered_interp1_speed(i) < -200             % all values >50^2 and <10^2 set to NaN
-            wavespeed_NoOutliers(i) = NaN;
-            time_NoOutliers(i) = NaN;
-        else                                                                        % Otherwise, no change
-            wavespeed_NoOutliers(i) = filtered_interp1_speed(i);
-            time_NoOutliers(i) = time(i);
+        
+        %disp(filtered_interp1_speed)
+        %% removing outliers from wavespeed
+        wavespeed_NoOutliers = zeros(1,length(filtered_interp1_speed));              % create a new vector for the wavespeed squared w/o outliers
+        time_NoOutliers = zeros(1,length(time));                                        % create a new vector for time to match the wavespeed w/o outliers
+        for i = 1:length(filtered_interp1_speed)                                             % walk through the WS^2 vectors
+            if filtered_interp1_speed(i) > 200 || filtered_interp1_speed(i) < -200             % all values >50^2 and <10^2 set to NaN
+                wavespeed_NoOutliers(i) = NaN;
+                time_NoOutliers(i) = NaN;
+            else                                                                        % Otherwise, no change
+                wavespeed_NoOutliers(i) = filtered_interp1_speed(i);
+                time_NoOutliers(i) = time(i);
+            end
         end
+        wavespeed_NoOutliers = rmmissing(wavespeed_NoOutliers);         % remove the NaNs
+        time_NoOutliers = rmmissing(time_NoOutliers);
+        
+        %max(wavespeed_NoOutliers)
+        AvgSpeed = sum(wavespeed_NoOutliers)/length(wavespeed_NoOutliers);
+        assignin('base', 'sampleAvgSpeed', AvgSpeed);
+        
+        
+        %% plotting the speed of the signals
+        subplot(5,5,n)
+        hold on
+        plot(time_NoOutliers, wavespeed_NoOutliers,"bx")                                  % plot the wave speeds
+        title("LB " + q*10 + ", UB " + (60+(m*10)));
+        result = sum(wavespeed_NoOutliers)/length(wavespeed_NoOutliers);
+        xlabel('time (s)');
+        ylabel('speed (m/s)');
+        %ylim([0,60])
+        
+        hold off
+        n = n+1;
     end
-    wavespeed_NoOutliers = rmmissing(wavespeed_NoOutliers);         % remove the NaNs
-    time_NoOutliers = rmmissing(time_NoOutliers);
-    
-    %max(wavespeed_NoOutliers)
-    AvgSpeed = sum(wavespeed_NoOutliers)/length(wavespeed_NoOutliers);
-    assignin('base', 'sampleAvgSpeed', AvgSpeed);
-    
-    
-    %% plotting the speed of the signals
-    figure
-    hold on
-    plot(time_NoOutliers, wavespeed_NoOutliers,"bx")                                  % plot the wave speeds
-    title('Wave Speed');
-    result = sum(wavespeed_NoOutliers)/length(wavespeed_NoOutliers);
-    xlabel('time (s)');
-    ylabel('speed (m/s)');
-    %ylim([0,60])
-    
-    hold off
-
 end
 
 
